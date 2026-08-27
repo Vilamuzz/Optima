@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1039704902784",
+    "project_id": "optima-5d878",
+    "storage_bucket": "optima-5d878.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039704902784:android:50688c2703ff4a4a8f6a65",
+        "android_client_info": {
+          "package_name": "com.vilamuzz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8le1IsLySpcbFVQ5rLBJ_OGZhX2_wAkU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
