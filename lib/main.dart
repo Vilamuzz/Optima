@@ -3,9 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
+import 'theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'providers/cart_provider.dart';
+import 'providers/store_profile_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -21,10 +23,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => CartProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => StoreProfileProvider()),
+      ],
       child: MaterialApp(
-        title: 'Grocery POS',
-        theme: ThemeData(primarySwatch: Colors.blue),
+        title: 'Optima',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
         home: const AuthWrapper(),
       ),
     );

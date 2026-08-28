@@ -43,7 +43,6 @@ class TransactionModel {
   final String transactionNumber;
   final List<TransactionItem> items;
   final double totalAmount;
-  final String paymentMethod;
   final double amountPaid;
   final double change;
   final String? cashierId;
@@ -54,7 +53,6 @@ class TransactionModel {
     required this.transactionNumber,
     required this.items,
     required this.totalAmount,
-    required this.paymentMethod,
     required this.amountPaid,
     required this.change,
     this.cashierId,
@@ -66,7 +64,6 @@ class TransactionModel {
       'transaction_number': transactionNumber,
       'items': items.map((item) => item.toMap()).toList(),
       'total_amount': totalAmount,
-      'payment_method': paymentMethod,
       'amount_paid': amountPaid,
       'change': change,
       'cashier_id': cashierId,
@@ -83,7 +80,6 @@ class TransactionModel {
               .toList() ??
           [],
       totalAmount: (data['total_amount'] ?? 0).toDouble(),
-      paymentMethod: data['payment_method'] ?? 'cash',
       amountPaid: (data['amount_paid'] ?? 0).toDouble(),
       change: (data['change'] ?? 0).toDouble(),
       cashierId: data['cashier_id'],

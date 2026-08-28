@@ -1,7 +1,9 @@
-import 'package:esc_pos_bluetooth/esc_pos_bluetooth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../services/printer_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_bottom_nav_bar.dart';
 
 class PrinterSettingsScreen extends StatefulWidget {
   const PrinterSettingsScreen({Key? key}) : super(key: key);
@@ -21,7 +23,11 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
   }
 
   void _startScan() {
-    _printerService.startScan();
+    try {
+      _printerService.startScan();
+    } catch (e) {
+      debugPrint('Scan exception: $e');
+    }
   }
 
   Future<void> _testPrint() async {
@@ -41,15 +47,15 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
       if (result == PosPrintResult.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Test print sent successfully!'),
-            backgroundColor: Colors.green,
+            content: Text('Test receipt sent successfully!'),
+            backgroundColor: AppTheme.successGreen,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Print result: ${result.msg}'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppTheme.secondaryAmber,
           ),
         );
       }
@@ -58,7 +64,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Print error: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorRed,
         ),
       );
     } finally {
@@ -66,13 +72,26 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     }
   }
 
+  String _getDeviceName(BluetoothDevice device, String? advName) {
+    if (device.platformName.isNotEmpty) return device.platformName;
+    if (advName != null && advName.isNotEmpty) return advName;
+    return 'Unknown Device';
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedPrinter = _printerService.selectedPrinter;
 
     return Scaffold(
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
       appBar: AppBar(
-        title: const Text('Bluetooth Thermal Printer'),
+        title: const Row(
+          children: [
+            Icon(Icons.print_rounded, color: AppTheme.secondaryAmber),
+            SizedBox(width: 10),
+            Text('Thermal Printer Setup'),
+          ],
+        ),
         actions: [
           StreamBuilder<bool>(
             stream: _printerService.isScanning,
@@ -87,36 +106,37 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
                     ),
                   ),
                 );
               }
               return IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Scan for printers',
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: 'Scan for devices',
                 onPressed: _startScan,
               );
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
-          // Active Printer Status Card
+          // Active Printer Banner Card
           Container(
             width: double.infinity,
             margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: selectedPrinter != null
-                  ? Colors.blue.shade50
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
+                  ? AppTheme.primaryEmerald.withOpacity(0.08)
+                  : AppTheme.secondaryAmber.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: selectedPrinter != null
-                    ? Colors.blue.shade300
-                    : Colors.grey.shade300,
+                    ? AppTheme.primaryEmerald.withOpacity(0.3)
+                    : AppTheme.secondaryAmber.withOpacity(0.3),
+                width: 1.5,
               ),
             ),
             child: Column(
@@ -124,14 +144,23 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.print,
-                      color: selectedPrinter != null
-                          ? Colors.blue.shade700
-                          : Colors.grey,
-                      size: 28,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: selectedPrinter != null
+                            ? AppTheme.primaryEmerald.withOpacity(0.15)
+                            : AppTheme.secondaryAmber.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.print_rounded,
+                        color: selectedPrinter != null
+                            ? AppTheme.primaryEmerald
+                            : AppTheme.secondaryAmber,
+                        size: 26,
+                      ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,21 +174,20 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                             ),
                           ),
                           Text(
-                            selectedPrinter?.name ?? 'No printer selected',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: selectedPrinter != null
-                                  ? Colors.black87
-                                  : Colors.grey.shade700,
+                            selectedPrinter != null
+                                ? _getDeviceName(selectedPrinter, selectedPrinter.advName)
+                                : 'No printer selected',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          if (selectedPrinter?.address != null)
+                          if (selectedPrinter != null)
                             Text(
-                              'Address: ${selectedPrinter!.address}',
-                              style: TextStyle(
+                              'ID / Address: ${selectedPrinter.remoteId.str}',
+                              style: const TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color: Colors.grey,
                               ),
                             ),
                         ],
@@ -167,21 +195,30 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: selectedPrinter == null || _isTestingPrint
-                      ? null
-                      : _testPrint,
-                  icon: _isTestingPrint
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.print_outlined),
-                  label: const Text('Send Raw Test Print Job'),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    onPressed: selectedPrinter == null || _isTestingPrint
+                        ? null
+                        : _testPrint,
+                    icon: _isTestingPrint
+                        ? const SizedBox.shrink()
+                        : const Icon(Icons.receipt_long_rounded, size: 18),
+                    label: _isTestingPrint
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Send Test Receipt Print'),
+                  ),
                 ),
-                const Divider(height: 24),
+                const Divider(height: 28),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text(
@@ -189,7 +226,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   subtitle: const Text(
-                    'Triggers print job immediately after successful sale',
+                    'Triggers print job automatically after payment completes',
                     style: TextStyle(fontSize: 12),
                   ),
                   value: _printerService.autoPrintOnCheckout,
@@ -204,25 +241,25 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
           ),
 
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Discovered Bluetooth Devices',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
           ),
 
           // Discovered Printers List
           Expanded(
-            child: StreamBuilder<List<PrinterBluetooth>>(
+            child: StreamBuilder<List<ScanResult>>(
               stream: _printerService.scanResults,
               initialData: const [],
               builder: (context, snapshot) {
-                final printers = snapshot.data ?? [];
+                final scanResults = snapshot.data ?? [];
 
-                if (printers.isEmpty) {
+                if (scanResults.isEmpty) {
                   return StreamBuilder<bool>(
                     stream: _printerService.isScanning,
                     initialData: false,
@@ -244,14 +281,25 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.bluetooth_searching,
-                                size: 48, color: Colors.grey),
+                            Icon(
+                              Icons.bluetooth_searching_rounded,
+                              size: 56,
+                              color: Colors.grey.withOpacity(0.4),
+                            ),
                             const SizedBox(height: 12),
-                            const Text('No Bluetooth thermal printers found.'),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
+                            const Text(
+                              'No Bluetooth thermal printers found',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            OutlinedButton.icon(
                               onPressed: _startScan,
-                              child: const Text('Scan Again'),
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Scan Again'),
                             ),
                           ],
                         ),
@@ -261,38 +309,59 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                 }
 
                 return ListView.builder(
-                  itemCount: printers.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  itemCount: scanResults.length,
                   itemBuilder: (context, index) {
-                    final printer = printers[index];
+                    final scanResult = scanResults[index];
+                    final device = scanResult.device;
+                    final deviceName = _getDeviceName(
+                      device,
+                      scanResult.advertisementData.advName,
+                    );
                     final isSelected =
-                        _printerService.selectedPrinter?.address == printer.address;
+                        _printerService.selectedPrinter?.remoteId.str ==
+                            device.remoteId.str;
 
                     return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
                       child: ListTile(
-                        leading: Icon(
-                          Icons.bluetooth,
-                          color: isSelected ? Colors.blue : Colors.grey,
-                        ),
-                        title: Text(
-                          printer.name ?? 'Unknown Device',
-                          style: TextStyle(
-                            fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.normal,
+                        leading: CircleAvatar(
+                          backgroundColor: isSelected
+                              ? AppTheme.primaryEmerald.withOpacity(0.15)
+                              : Colors.grey.withOpacity(0.15),
+                          child: Icon(
+                            Icons.bluetooth_rounded,
+                            color: isSelected
+                                ? AppTheme.primaryEmerald
+                                : Colors.grey,
                           ),
                         ),
-                        subtitle: Text(printer.address ?? 'No Address'),
+                        title: Text(
+                          deviceName,
+                          style: TextStyle(
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          device.remoteId.str,
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         trailing: isSelected
-                            ? const Chip(
-                                avatar: Icon(Icons.check, size: 16),
-                                label: Text('Connected'),
-                                backgroundColor: Colors.lightBlueAccent,
+                            ? Chip(
+                                avatar: const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 16,
+                                  color: AppTheme.primaryEmerald,
+                                ),
+                                label: const Text('Active'),
+                                backgroundColor:
+                                    AppTheme.primaryEmerald.withOpacity(0.15),
+                                side: BorderSide.none,
                               )
                             : OutlinedButton(
                                 onPressed: () {
                                   setState(() {
-                                    _printerService.selectPrinter(printer);
+                                    _printerService.selectPrinter(device);
                                   });
                                 },
                                 child: const Text('Pair & Select'),

@@ -12,18 +12,24 @@ class CartProvider extends ChangeNotifier {
 
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
-  void addItem(Product product, int quantity) {
-    final existing = _items.firstWhere(
+  bool addItem(Product product, int quantity) {
+    final existingIndex = _items.indexWhere(
       (item) => item.product.id == product.id,
-      orElse: () => CartItem(product: product, quantity: 0),
     );
 
-    if (existing.quantity > 0) {
-      existing.quantity += quantity;
+    final currentQty = existingIndex != -1 ? _items[existingIndex].quantity : 0;
+
+    if (currentQty + quantity > product.stockQty) {
+      return false;
+    }
+
+    if (existingIndex != -1) {
+      _items[existingIndex].quantity += quantity;
     } else {
       _items.add(CartItem(product: product, quantity: quantity));
     }
     notifyListeners();
+    return true;
   }
 
   void updateQuantity(String productId, int quantity) {
