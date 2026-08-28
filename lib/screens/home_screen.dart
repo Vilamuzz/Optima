@@ -112,11 +112,14 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.history_rounded,
-                      size: 20, color: AppTheme.primaryEmerald),
+                  const Icon(
+                    Icons.history_rounded,
+                    size: 20,
+                    color: AppTheme.primaryEmerald,
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    'Recent Sales Transactions',
+                    'Recent Transactions',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.3,
@@ -148,7 +151,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 return SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text('Error loading transactions: ${snapshot.error}'),
+                    child: Text(
+                      'Error loading transactions: ${snapshot.error}',
+                    ),
                   ),
                 );
               }
@@ -165,13 +170,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         Icon(
                           Icons.receipt_long_rounded,
                           size: 64,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.25,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'No sales transactions recorded yet.',
+                          'No transactions recorded yet.',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -196,13 +205,10 @@ class _HomeScreenState extends State<HomeScreen> {
               return SliverPadding(
                 padding: const EdgeInsets.only(bottom: 80),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final trx = recentTransactions[index];
-                      return _buildTransactionTile(context, trx, theme);
-                    },
-                    childCount: recentTransactions.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final trx = recentTransactions[index];
+                    return _buildTransactionTile(context, trx, theme);
+                  }, childCount: recentTransactions.length),
                 ),
               );
             },
@@ -213,18 +219,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ── Monthly Sales Revenue Card ───────────────────────────
-  Widget _buildSalesRevenueCard(List<TransactionModel> allTransactions, ThemeData theme) {
+  Widget _buildSalesRevenueCard(
+    List<TransactionModel> allTransactions,
+    ThemeData theme,
+  ) {
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
     final startOfWeek = startOfToday.subtract(Duration(days: now.weekday - 1));
     final startOfMonth = DateTime(now.year, now.month, 1);
 
-    final todayList =
-        allTransactions.where((t) => !t.createdAt.isBefore(startOfToday)).toList();
-    final weeklyList =
-        allTransactions.where((t) => !t.createdAt.isBefore(startOfWeek)).toList();
-    final monthlyList =
-        allTransactions.where((t) => !t.createdAt.isBefore(startOfMonth)).toList();
+    final todayList = allTransactions
+        .where((t) => !t.createdAt.isBefore(startOfToday))
+        .toList();
+    final weeklyList = allTransactions
+        .where((t) => !t.createdAt.isBefore(startOfWeek))
+        .toList();
+    final monthlyList = allTransactions
+        .where((t) => !t.createdAt.isBefore(startOfMonth))
+        .toList();
 
     final todayTotal = todayList.fold(0.0, (sum, t) => sum + t.totalAmount);
     final weeklyTotal = weeklyList.fold(0.0, (sum, t) => sum + t.totalAmount);
@@ -272,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'Monthly Sales Revenue ($monthName)',
+                    'Monthly Revenue ($monthName)',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 13,
@@ -348,11 +360,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Sales Transaction Card ───────────────────────────────
   Widget _buildTransactionTile(
-      BuildContext context, TransactionModel trx, ThemeData theme) {
+    BuildContext context,
+    TransactionModel trx,
+    ThemeData theme,
+  ) {
     final dateStr = DateFormat('dd MMM yyyy  HH:mm').format(trx.createdAt);
     final fmtTotal = AppTheme.formatCurrency(trx.totalAmount);
-    final totalItems =
-        trx.items.fold<int>(0, (sum, item) => sum + item.quantity);
+    final totalItems = trx.items.fold<int>(
+      0,
+      (sum, item) => sum + item.quantity,
+    );
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -397,7 +414,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -418,7 +439,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Text(
                 trx.transactionNumber,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
           ],
@@ -430,43 +454,54 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Date: $dateStr',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(
+                  'Date: $dateStr',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
                 const Divider(height: 20),
-                const Text('Items Purchased:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Text(
+                  'Items Purchased:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
                 const SizedBox(height: 8),
-                ...trx.items.map((item) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${item.productName} × ${item.quantity}',
-                              style: const TextStyle(fontSize: 13),
-                            ),
+                ...trx.items.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${item.productName} × ${item.quantity}',
+                            style: const TextStyle(fontSize: 13),
                           ),
-                          Text(
-                            AppTheme.formatCurrency(item.subtotal),
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          AppTheme.formatCurrency(item.subtotal),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      ),
-                    )),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const Divider(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total Amount:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Total Amount:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Text(
                       AppTheme.formatCurrency(trx.totalAmount),
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryEmerald,
-                          fontSize: 16),
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryEmerald,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -475,16 +510,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Amount Paid:', style: TextStyle(fontSize: 12)),
-                    Text(AppTheme.formatCurrency(trx.amountPaid),
-                        style: const TextStyle(fontSize: 12)),
+                    Text(
+                      AppTheme.formatCurrency(trx.amountPaid),
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ],
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Change:', style: TextStyle(fontSize: 12)),
-                    Text(AppTheme.formatCurrency(trx.change),
-                        style: const TextStyle(fontSize: 12)),
+                    Text(
+                      AppTheme.formatCurrency(trx.change),
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ],
                 ),
               ],
@@ -501,7 +540,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
 
 class _StatTile extends StatelessWidget {
   final String label;
