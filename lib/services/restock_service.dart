@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
-import '../models/restock_model.dart';
+import '../models/restock.dart';
 
 /// Describes a single product line for a bulk restock submission.
 class RestockLineInput {

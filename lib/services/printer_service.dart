@@ -1,8 +1,8 @@
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-import '../models/store_profile_model.dart';
-import '../models/transaction_model.dart';
+import '../models/store_profile.dart';
+import '../models/transaction.dart';
 import 'store_profile_service.dart';
 
 enum PosPrintResult {

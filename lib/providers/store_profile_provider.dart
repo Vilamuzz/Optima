@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/store_profile_model.dart';
+import '../models/store_profile.dart';
 import '../services/store_profile_service.dart';
 
 class StoreProfileProvider extends ChangeNotifier {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/product.dart';
-import '../models/restock_model.dart';
+import '../models/restock.dart';
 import '../services/restock_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav_bar.dart';

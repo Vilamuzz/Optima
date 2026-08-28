@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../models/store_profile_model.dart';
+import '../models/store_profile.dart';
 
 class StoreProfileService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;

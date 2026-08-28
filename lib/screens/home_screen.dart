@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../models/transaction_model.dart';
+import '../models/transaction.dart';
 import '../services/auth_service.dart';
 import '../services/transaction_service.dart';
 import '../theme/app_theme.dart';

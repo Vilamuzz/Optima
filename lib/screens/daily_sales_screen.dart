@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/transaction_model.dart';
+import '../models/transaction.dart';
 import '../services/transaction_service.dart';
 import '../theme/app_theme.dart';
 
