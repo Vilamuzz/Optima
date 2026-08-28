@@ -15,18 +15,12 @@ class TransactionService {
   /// 4. Creates a transaction record in Firestore.
   Future<TransactionModel> processCheckout({
     required List<CartItem> cartItems,
-    required String paymentMethod,
     required double amountPaid,
     String? cashierId,
   }) async {
     if (cartItems.isEmpty) {
       throw Exception('Cannot checkout an empty cart.');
     }
-
-    final double totalAmount =
-        cartItems.fold(0, (sum, item) => sum + item.subtotal);
-    final double change =
-        amountPaid >= totalAmount ? amountPaid - totalAmount : 0;
 
     final String transactionId = _uuid.v4();
     final String timestampStr =
@@ -100,7 +94,6 @@ class TransactionService {
         'transaction_number': transactionNumber,
         'items': snapshotItems.map((item) => item.toMap()).toList(),
         'total_amount': calculatedTotal,
-        'payment_method': paymentMethod,
         'amount_paid': amountPaid,
         'change': calculatedChange,
         'cashier_id': cashierId,
@@ -119,7 +112,6 @@ class TransactionService {
       transactionNumber: transactionNumber,
       items: finalTrxItems,
       totalAmount: finalTotalAmount,
-      paymentMethod: paymentMethod,
       amountPaid: amountPaid,
       change: finalChange,
       cashierId: cashierId,
@@ -127,7 +119,7 @@ class TransactionService {
     );
   }
 
-  /// Optional stream to fetch transaction history if needed
+  /// Stream to fetch all transaction history ordered by created_at descending
   Stream<List<TransactionModel>> getTransactions() {
     return _db
         .collection('transactions')
@@ -139,4 +131,53 @@ class TransactionService {
           .toList();
     });
   }
+
+  /// Returns recent transactions limited by count to prevent unbounded reads.
+  Stream<List<TransactionModel>> getRecentTransactionsStream({int limit = 50}) {
+    return _db
+        .collection('transactions')
+        .orderBy('created_at', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
+          .toList();
+    });
+  }
+
+  /// Returns transactions created from the specified start date onwards.
+  Stream<List<TransactionModel>> getTransactionsFromDateStream(DateTime startDate) {
+    return _db
+        .collection('transactions')
+        .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
+          .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
+  }
+
+  /// Returns a stream of transactions created on the specified date.
+  Stream<List<TransactionModel>> getTransactionsForDateStream(DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+    return _db
+        .collection('transactions')
+        .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('created_at', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
+          .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
+  }
 }
+

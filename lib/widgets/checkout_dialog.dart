@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:esc_pos_bluetooth/esc_pos_bluetooth.dart';
-
 import '../models/transaction_model.dart';
 import '../providers/cart_provider.dart';
+import '../providers/store_profile_provider.dart';
+import '../screens/home_screen.dart';
 import '../screens/printer_settings_screen.dart';
 import '../services/auth_service.dart';
 import '../services/printer_service.dart';
 import '../services/transaction_service.dart';
+import '../theme/app_theme.dart';
 
 class CheckoutDialog extends StatefulWidget {
   const CheckoutDialog({Key? key}) : super(key: key);
@@ -21,14 +22,12 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
   final TransactionService _transactionService = TransactionService();
   final TextEditingController _amountPaidController = TextEditingController();
 
-  String _paymentMethod = 'cash'; // 'cash', 'qris', 'card'
-  bool _isProcessing = false;
   String? _errorMessage;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    // Default cash amount paid to total amount
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cart = context.read<CartProvider>();
       _amountPaidController.text = cart.total.toStringAsFixed(0);
@@ -42,7 +41,6 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
   }
 
   double _getAmountPaid(double total) {
-    if (_paymentMethod != 'cash') return total;
     return double.tryParse(_amountPaidController.text) ?? 0;
   }
 
@@ -54,11 +52,11 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
 
     final double amountPaid = _getAmountPaid(cart.total);
     final user = AuthService().getCurrentUser();
+    final storeProfile = context.read<StoreProfileProvider>().profile;
 
     try {
       final transaction = await _transactionService.processCheckout(
         cartItems: cart.items,
-        paymentMethod: _paymentMethod,
         amountPaid: amountPaid,
         cashierId: user?.uid ?? user?.email,
       );
@@ -74,9 +72,11 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
       if (printerService.autoPrintOnCheckout &&
           printerService.selectedPrinter != null) {
         autoPrinted = true;
-        printerService.printTransaction(transaction).catchError((e) {
+        printerService
+            .printTransaction(transaction, storeProfile: storeProfile)
+            .catchError((e) {
           debugPrint('Auto-print exception: $e');
-          return PosPrintResult.unknown;
+          return PosPrintResult.timeout;
         });
       }
 
@@ -95,16 +95,30 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
     TransactionModel transaction, {
     bool autoPrinted = false,
   }) {
+    final storeProfile = context.read<StoreProfileProvider>().profile;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
         return AlertDialog(
-          title: Row(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.check_circle, color: Colors.green, size: 28),
-              SizedBox(width: 8),
-              Text('Transaction Complete'),
+              Icon(Icons.check_circle_rounded, color: AppTheme.successGreen, size: 40),
+              SizedBox(height: 8),
+              Text(
+                'Transaction',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Complete',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -114,99 +128,133 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Center(
-                    child: Text(
-                      'POS SUMBER BERKAT',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
                   Center(
                     child: Text(
-                      'Receipt #: ${transaction.transactionNumber}',
+                      storeProfile.name.toUpperCase(),
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  if (storeProfile.address.isNotEmpty)
+                    Center(
+                      child: Text(
+                        storeProfile.address,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Center(
+                    child: Text(
+                      'Receipt #${transaction.transactionNumber}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Colors.grey,
                       ),
                     ),
                   ),
                   Center(
                     child: Text(
-                      'Printed: ${DateTime.now().toString().split('.').first}',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      'Date: ${DateTime.now().toString().split('.').first}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 11),
                     ),
                   ),
                   if (autoPrinted) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.green.shade200),
+                        color: AppTheme.successGreen.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.successGreen.withOpacity(0.3)),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.print, size: 16, color: Colors.green),
-                          SizedBox(width: 6),
+                        children: [
+                          Icon(Icons.print_rounded, size: 16, color: AppTheme.successGreen),
+                          SizedBox(width: 8),
                           Text(
-                            'Receipt auto-printed to thermal printer',
+                            'Receipt printed to thermal printer',
                             style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold),
+                              fontSize: 12,
+                              color: AppTheme.successGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                  const Divider(height: 24),
-                  ...transaction.items.map((item) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.productName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                  const Divider(height: 28),
+                  ...transaction.items.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.productName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '  ${item.quantity} x ${AppTheme.formatCurrency(item.priceAtSale)}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '  ${item.quantity} x Rp${item.priceAtSale.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade800,
-                                  ),
+                              Text(
+                                AppTheme.formatCurrency(item.subtotal),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
                                 ),
-                                Text(
-                                  'Rp${item.subtotal.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      )),
-                  const Divider(height: 24),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 28),
+                  const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Payment Method:'),
-                      Text(
-                        transaction.paymentMethod.toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      const Text(
+                        'Total Paid:',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
+                      Text(
+                        AppTheme.formatCurrency(transaction.totalAmount),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          color: AppTheme.primaryEmerald,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Amount Received:'),
+                      Text(AppTheme.formatCurrency(transaction.amountPaid)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -214,37 +262,15 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Total:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        'Change:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Rp${transaction.totalAmount.toStringAsFixed(0)}',
+                        AppTheme.formatCurrency(transaction.change),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Amount Paid:'),
-                      Text('Rp${transaction.amountPaid.toStringAsFixed(0)}'),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Change:'),
-                      Text(
-                        'Rp${transaction.change.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          color: AppTheme.successGreen,
+                          fontSize: 15,
                         ),
                       ),
                     ],
@@ -260,7 +286,7 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
                 if (printerService.selectedPrinter == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('No Bluetooth printer selected.'),
+                      content: const Text('No Bluetooth printer configured.'),
                       action: SnackBarAction(
                         label: 'CONFIGURE',
                         onPressed: () {
@@ -276,30 +302,42 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
                   return;
                 }
 
-                final result = await printerService.printTransaction(transaction);
+                final result = await printerService.printTransaction(
+                  transaction,
+                  storeProfile: storeProfile,
+                );
                 if (!context.mounted) return;
 
                 if (result == PosPrintResult.success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Receipt printed successfully!'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppTheme.successGreen,
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Print job status: ${result.msg}'),
-                      backgroundColor: Colors.orange,
+                      content: Text('Print status: ${result.msg}'),
+                      backgroundColor: AppTheme.secondaryAmber,
                     ),
                   );
                 }
               },
-              icon: const Icon(Icons.print),
+              icon: const Icon(Icons.print_rounded),
               label: const Text('Print Receipt'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryEmerald,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.of(ctx).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  (route) => false,
+                );
+              },
               child: const Text('Done'),
             ),
           ],
@@ -314,10 +352,11 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
     final double total = cart.total;
     final double amountPaid = _getAmountPaid(total);
     final double change = amountPaid >= total ? amountPaid - total : 0;
-    final bool isAmountSufficient = _paymentMethod != 'cash' || amountPaid >= total;
+    final bool isAmountSufficient = amountPaid >= total;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: 480,
         padding: const EdgeInsets.all(24),
@@ -326,124 +365,82 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Checkout',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  const Row(
+                    children: [
+                      Icon(Icons.point_of_sale_rounded, color: AppTheme.primaryEmerald),
+                      SizedBox(width: 10),
+                      Text(
+                        'Checkout Order',
+                        style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                      ),
+                    ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close_rounded),
                     onPressed: _isProcessing ? null : () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              const Divider(),
-              const SizedBox(height: 8),
+              const Divider(height: 20),
 
-              // Total Summary
+              // Total Summary Banner Card
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
+                  color: AppTheme.primaryEmerald.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.primaryEmerald.withOpacity(0.2),
+                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Total (${cart.itemCount} items):',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    const Text(
+                      'Total Payable',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     Text(
-                      'Rp${total.toStringAsFixed(0)}',
+                      '${cart.itemCount} items in cart',
                       style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppTheme.formatCurrency(total),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primaryEmerald,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               const Text(
-                'Payment Method',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                'Amount Paid',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Center(child: Text('Cash')),
-                      selected: _paymentMethod == 'cash',
-                      onSelected: _isProcessing
-                          ? null
-                          : (sel) {
-                              if (sel) {
-                                setState(() {
-                                  _paymentMethod = 'cash';
-                                  _amountPaidController.text =
-                                      total.toStringAsFixed(0);
-                                });
-                              }
-                            },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Center(child: Text('QRIS')),
-                      selected: _paymentMethod == 'qris',
-                      onSelected: _isProcessing
-                          ? null
-                          : (sel) {
-                              if (sel) {
-                                setState(() => _paymentMethod = 'qris');
-                              }
-                            },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Center(child: Text('Card')),
-                      selected: _paymentMethod == 'card',
-                      onSelected: _isProcessing
-                          ? null
-                          : (sel) {
-                              if (sel) {
-                                setState(() => _paymentMethod = 'card');
-                              }
-                            },
-                    ),
-                  ),
-                ],
-              ),
-
-              if (_paymentMethod == 'cash') ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Amount Paid (Rp)',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
                 TextField(
                   controller: _amountPaidController,
                   keyboardType: TextInputType.number,
                   enabled: !_isProcessing,
                   decoration: const InputDecoration(
                     prefixText: 'Rp ',
-                    border: OutlineInputBorder(),
+                    hintText: 'Enter amount received...',
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 // Quick cash buttons
                 Wrap(
                   spacing: 8,
@@ -462,7 +459,7 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
                     ),
                     ...[10000, 20000, 50000, 100000, 200000].map(
                       (amt) => ActionChip(
-                        label: Text('Rp${amt ~/ 1000}k'),
+                        label: Text('Rp ${amt ~/ 1000}k'),
                         onPressed: _isProcessing
                             ? null
                             : () {
@@ -477,59 +474,66 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
 
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isAmountSufficient
-                        ? Colors.green.shade50
-                        : Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                        ? AppTheme.successGreen.withOpacity(0.1)
+                        : AppTheme.errorRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isAmountSufficient
+                          ? AppTheme.successGreen.withOpacity(0.3)
+                          : AppTheme.errorRed.withOpacity(0.3),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isAmountSufficient ? 'Change (Kembalian):' : 'Insufficient Payment:',
+                        isAmountSufficient
+                            ? 'Change:'
+                            : 'Insufficient Payment:',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: isAmountSufficient
-                              ? Colors.green.shade800
-                              : Colors.red.shade800,
+                              ? AppTheme.successGreen
+                              : AppTheme.errorRed,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         isAmountSufficient
-                            ? 'Rp${change.toStringAsFixed(0)}'
-                            : 'Rp${(total - amountPaid).toStringAsFixed(0)} missing',
+                            ? AppTheme.formatCurrency(change)
+                            : '${AppTheme.formatCurrency(total - amountPaid)} missing',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
                           color: isAmountSufficient
-                              ? Colors.green.shade800
-                              : Colors.red.shade800,
+                              ? AppTheme.successGreen
+                              : AppTheme.errorRed,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
 
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade300),
+                    color: AppTheme.errorRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.errorRed.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
+                      const Icon(Icons.error_outline, color: AppTheme.errorRed),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+                          style: const TextStyle(color: AppTheme.errorRed),
                         ),
                       ),
                     ],
@@ -538,25 +542,33 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
               ],
 
               const SizedBox(height: 24),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.vertical: 16),
-                onPressed: (!isAmountSufficient || _isProcessing)
-                    ? null
-                    : () => _processPayment(cart),
-                child: _isProcessing
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+              SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryEmerald,
+                      foregroundColor: Colors.white,
+                    ),
+                  onPressed: (!isAmountSufficient || _isProcessing)
+                      ? null
+                      : () => _processPayment(cart),
+                  icon: _isProcessing
+                      ? const SizedBox.shrink()
+                      : const Icon(Icons.check_circle_outline_rounded),
+                  label: _isProcessing
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Process Payment',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                         ),
-                      )
-                    : const Text(
-                        'Process Payment & Complete Sale',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                ),
               ),
             ],
           ),
@@ -565,3 +577,5 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
     );
   }
 }
+
+
