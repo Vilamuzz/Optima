@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/category_model.dart';
+import '../models/category.dart';
 import '../models/product.dart';
 import '../services/category_service.dart';
 import '../services/product_service.dart';
@@ -48,12 +48,15 @@ class _EditProductScreenState extends State<EditProductScreen> {
     super.initState();
     _selectedCategory = widget.product.category;
     _nameController = TextEditingController(text: widget.product.name);
-    _barcodeController =
-        TextEditingController(text: widget.product.barcode ?? '');
-    _priceController =
-        TextEditingController(text: widget.product.price.toStringAsFixed(0));
-    _stockController =
-        TextEditingController(text: widget.product.stockQty.toString());
+    _barcodeController = TextEditingController(
+      text: widget.product.barcode ?? '',
+    );
+    _priceController = TextEditingController(
+      text: widget.product.price.toStringAsFixed(0),
+    );
+    _stockController = TextEditingController(
+      text: widget.product.stockQty.toString(),
+    );
     _lowStockController = TextEditingController(
       text: widget.product.lowStockThreshold.toString(),
     );
@@ -80,6 +83,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryEmerald,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               final text = controller.text.trim();
               if (text.isNotEmpty) {
@@ -146,7 +153,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
         'category': _selectedCategory,
         'price': price,
         'stock_qty': stock,
-        'low_stock_threshold': int.tryParse(_lowStockController.text.trim()) ?? 0,
+        'low_stock_threshold':
+            int.tryParse(_lowStockController.text.trim()) ?? 0,
       });
 
       if (mounted) {
@@ -181,9 +189,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorRed,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
             child: const Text('Delete Product'),
           ),
         ],
@@ -200,9 +206,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${widget.product.name} deleted.'),
-          ),
+          SnackBar(content: Text('${widget.product.name} deleted.')),
         );
       }
     } catch (e) {
@@ -235,8 +239,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       color: AppTheme.accentIndigo.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.edit_note_rounded,
-                        color: AppTheme.accentIndigo, size: 20),
+                    child: const Icon(
+                      Icons.edit_note_rounded,
+                      color: AppTheme.accentIndigo,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -247,8 +254,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded,
-                        color: AppTheme.errorRed),
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppTheme.errorRed,
+                    ),
                     tooltip: 'Delete Product',
                     onPressed: _isLoading ? null : _handleDeleteProduct,
                   ),
@@ -280,7 +289,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
                     stream: _categoryService.getCategories(),
                     builder: (context, snapshot) {
                       final categories = snapshot.data ?? [];
-                      final hasMatching = categories.any((c) => c.name == _selectedCategory);
+                      final hasMatching = categories.any(
+                        (c) => c.name == _selectedCategory,
+                      );
                       return Row(
                         children: [
                           Expanded(
@@ -292,10 +303,12 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                 prefixIcon: Icon(Icons.category_outlined),
                               ),
                               items: categories
-                                  .map((c) => DropdownMenuItem(
-                                        value: c.name,
-                                        child: Text(c.name),
-                                      ))
+                                  .map(
+                                    (c) => DropdownMenuItem(
+                                      value: c.name,
+                                      child: Text(c.name),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (val) =>
                                   setState(() => _selectedCategory = val),
@@ -303,7 +316,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.add_rounded, color: AppTheme.accentIndigo),
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: AppTheme.accentIndigo,
+                            ),
                             tooltip: 'Create New Category',
                             onPressed: () => _showAddCategoryDialog(context),
                           ),
@@ -326,8 +342,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
                         onPressed: _isLoading
                             ? null
                             : () async {
-                                final code =
-                                    await BarcodeScannerDialog.scan(context);
+                                final code = await BarcodeScannerDialog.scan(
+                                  context,
+                                );
                                 if (code != null && code.isNotEmpty) {
                                   setState(() {
                                     _barcodeController.text = code;
@@ -341,8 +358,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   const SizedBox(height: 14),
                   TextField(
                     controller: _priceController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Selling Price (Rp) *',
                       prefixIcon: Icon(Icons.payments_outlined),
@@ -383,14 +401,19 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline,
-                              color: AppTheme.errorRed, size: 18),
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppTheme.errorRed,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _errorMessage!,
                               style: const TextStyle(
-                                  color: AppTheme.errorRed, fontSize: 13),
+                                color: AppTheme.errorRed,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],

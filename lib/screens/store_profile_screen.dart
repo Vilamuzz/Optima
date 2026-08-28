@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/store_profile_model.dart';
+import '../models/store_profile.dart';
 import '../providers/store_profile_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav_bar.dart';

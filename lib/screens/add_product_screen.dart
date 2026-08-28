@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/category_model.dart';
+import '../models/category.dart';
 import '../models/product.dart';
 import '../services/category_service.dart';
 import '../services/product_service.dart';
@@ -73,6 +73,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryEmerald,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               final text = controller.text.trim();
               if (text.isNotEmpty) {
@@ -175,8 +179,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.add_box_rounded,
-                        color: AppTheme.primaryEmerald, size: 20),
+                    child: const Icon(
+                      Icons.add_box_rounded,
+                      color: AppTheme.primaryEmerald,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -215,7 +222,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     stream: _categoryService.getCategories(),
                     builder: (context, snapshot) {
                       final categories = snapshot.data ?? [];
-                      final hasMatching = categories.any((c) => c.name == _selectedCategory);
+                      final hasMatching = categories.any(
+                        (c) => c.name == _selectedCategory,
+                      );
                       return Row(
                         children: [
                           Expanded(
@@ -227,10 +236,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                 prefixIcon: Icon(Icons.category_outlined),
                               ),
                               items: categories
-                                  .map((c) => DropdownMenuItem(
-                                        value: c.name,
-                                        child: Text(c.name),
-                                      ))
+                                  .map(
+                                    (c) => DropdownMenuItem(
+                                      value: c.name,
+                                      child: Text(c.name),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (val) =>
                                   setState(() => _selectedCategory = val),
@@ -238,7 +249,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.add_rounded, color: AppTheme.primaryEmerald),
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: AppTheme.primaryEmerald,
+                            ),
                             tooltip: 'Create New Category',
                             onPressed: () => _showAddCategoryDialog(context),
                           ),
@@ -262,8 +276,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         onPressed: _isLoading
                             ? null
                             : () async {
-                                final code =
-                                    await BarcodeScannerDialog.scan(context);
+                                final code = await BarcodeScannerDialog.scan(
+                                  context,
+                                );
                                 if (code != null && code.isNotEmpty) {
                                   setState(() {
                                     _barcodeController.text = code;
@@ -277,8 +292,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   const SizedBox(height: 14),
                   TextField(
                     controller: _priceController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Selling Price (Rp) *',
                       hintText: 'e.g. 25000',
@@ -320,14 +336,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline,
-                              color: AppTheme.errorRed, size: 18),
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppTheme.errorRed,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _errorMessage!,
                               style: const TextStyle(
-                                  color: AppTheme.errorRed, fontSize: 13),
+                                color: AppTheme.errorRed,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
