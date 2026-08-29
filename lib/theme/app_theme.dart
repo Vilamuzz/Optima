@@ -158,11 +158,22 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: bgLight,
         selectedColor: primaryContainer,
-        side: const BorderSide(color: borderLight),
+        side: WidgetStateBorderSide.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const BorderSide(color: primaryEmerald, width: 1.5);
+          }
+          return const BorderSide(color: borderLight);
+        }),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         labelStyle: GoogleFonts.plusJakartaSans(
           fontSize: 12,
           fontWeight: FontWeight.w600,
+          color: textSecondaryLight,
+        ),
+        secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: primaryEmerald,
         ),
       ),
     );
